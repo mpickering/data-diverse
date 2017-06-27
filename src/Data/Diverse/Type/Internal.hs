@@ -117,31 +117,31 @@ type family WithoutIndexImpl (accum :: [k]) (i :: Nat) (ctx :: [k]) (n :: Nat) (
     WithoutIndexImpl accum i ctx n (x ': xs) = WithoutIndexImpl (x ': accum) i ctx (n - 1) xs
 
 -- | The typelist @xs@ without the type at Nat @n@ replaced by @y@. @n@ must be within bounds of @xs@
-type family ReplaceIndexImpl (i :: Nat) (ctx :: [k]) (n :: Nat) (y :: k) (xs :: [k]) :: [k] where
-    ReplaceIndexImpl i ctx n y '[] = TypeError ('Text "ReplaceIndex error: Index ‘"
+type family ReplaceIndexImpl (accum :: [k]) (i :: Nat) (ctx :: [k]) (n :: Nat) (y :: k) (xs :: [k]) :: [k] where
+    ReplaceIndexImpl accum i ctx n y '[] = TypeError ('Text "ReplaceIndex error: Index ‘"
                                        ':<>: 'ShowType i
                                        ':<>: 'Text "’"
                                        ':<>: 'Text " is out of bounds of "
                                        ':<>: 'Text "‘"
                                        ':<>: 'ShowType ctx
                                        ':<>: 'Text "’")
-    ReplaceIndexImpl i ctx 0 y (x ': xs) = y ': xs
-    ReplaceIndexImpl i ctx n y (x ': xs) = x ': ReplaceIndexImpl i ctx (n - 1) y xs
+    ReplaceIndexImpl accum i ctx 0 y (x ': xs) = ReverseImpl '[] (y ': xs) accum
+    ReplaceIndexImpl accum i ctx n y (x ': xs) = ReplaceIndexImpl (x ': accum) i ctx (n - 1) y xs
 
 -- | The typelist @xs@ with the first @x@ replaced by @y@. It is okay for @x@ not to exist in @xs@
-type family ReplaceImpl (x :: k) (y :: k) (xs :: [k]) :: [k] where
-    ReplaceImpl x y '[] = '[]
-    ReplaceImpl x y (x ': xs) = y ': xs
-    ReplaceImpl x y (z ': xs) = z ': ReplaceImpl x y xs
+type family ReplaceImpl (accum :: [k]) (x :: k) (y :: k) (xs :: [k]) :: [k] where
+    ReplaceImpl accum x y '[] = ReverseImpl '[] '[] accum
+    ReplaceImpl accum x y (x ': xs) = ReverseImpl '[] (y ': xs) accum
+    ReplaceImpl accum x y (z ': xs) = ReplaceImpl (z ': accum) x y xs
 
 -- | The typelist @zs@ with the first @xs@ replaced by @ys@.
 -- @xs@ must be the same size as @ys@
-type family ReplacesImpl (xs' :: [k]) (ys' :: [k]) (xs :: [k]) (ys :: [k]) (zs :: [k]) :: [k] where
-    ReplacesImpl xs' ys' xs ys '[] = '[]
-    ReplacesImpl xs' ys' '[] '[] (z ': zs) = z ': ReplacesImpl xs' ys' xs' ys' zs
-    ReplacesImpl xs' ys' (x ': xs) (y ': ys) (x ': zs) = y ': ReplacesImpl xs' ys' xs' ys' zs
-    ReplacesImpl xs' ys' (x ': xs) (y ': ys) (z ': zs) = ReplacesImpl xs' ys' xs ys (z ': zs)
-    ReplacesImpl xs' ys' xs ys zs = TypeError ('Text "Replaces error: ‘"
+type family ReplacesImpl (accum :: [k]) (xs' :: [k]) (ys' :: [k]) (xs :: [k]) (ys :: [k]) (zs :: [k]) :: [k] where
+    ReplacesImpl accum xs' ys' xs ys '[] = ReverseImpl '[] '[] accum
+    ReplacesImpl accum xs' ys' '[] '[] (z ': zs) = ReplacesImpl (z ': accum) xs' ys' xs' ys' zs
+    ReplacesImpl accum xs' ys' (x ': xs) (y ': ys) (x ': zs) = ReplacesImpl (y ': accum) xs' ys' xs' ys' zs
+    ReplacesImpl accum xs' ys' (x ': xs) (y ': ys) (z ': zs) = ReplacesImpl accum xs' ys' xs ys (z ': zs)
+    ReplacesImpl accum xs' ys' xs ys zs = TypeError ('Text "Replaces error: ‘"
                                        ':<>: 'ShowType xs'
                                        ':<>: 'Text "’"
                                        ':<>: 'Text " must be the same size as "
@@ -157,11 +157,11 @@ type family ReplaceIfIndex (ns :: [Nat]) (ys :: [k]) (i :: Nat) (x :: k) :: k wh
     ReplaceIfIndex (n ': ns) (y ': ys) i x = ReplaceIfIndex ns ys i x
 
 -- | The typelist @xs@ replaced by @ys@ at the indices @ns@. @ns@ and @ys@ must be the same length. @ns@ must be within bounds of @xs@
-type family ReplacesIndexImpl (i :: Nat) (ns :: [Nat]) (ys :: [k]) (xs :: [k]) :: [k] where
-    ReplacesIndexImpl i ns ys '[] = '[]
-    ReplacesIndexImpl i '[] '[] xs = xs
-    ReplacesIndexImpl i ns ys (x ': xs) = ReplaceIfIndex ns ys i x ': ReplacesIndexImpl (i + 1) ns ys xs
-    ReplacesIndexImpl i ns ys xs = TypeError ('Text "ReplacesIndex error: ‘"
+type family ReplacesIndexImpl (accum :: [k]) (i :: Nat) (ns :: [Nat]) (ys :: [k]) (xs :: [k]) :: [k] where
+    ReplacesIndexImpl accum i ns ys '[] = ReverseImpl '[] '[] accum
+    ReplacesIndexImpl accum i '[] '[] xs = ReverseImpl '[] xs accum
+    ReplacesIndexImpl accum i ns ys (x ': xs) = ReplacesIndexImpl (ReplaceIfIndex ns ys i x ': accum) (i + 1) ns ys xs
+    ReplacesIndexImpl accum i ns ys xs = TypeError ('Text "ReplacesIndex error: ‘"
                                        ':<>: 'ShowType ns
                                        ':<>: 'Text "’"
                                        ':<>: 'Text " must be the same size as "
@@ -170,13 +170,32 @@ type family ReplacesIndexImpl (i :: Nat) (ns :: [Nat]) (ys :: [k]) (xs :: [k]) :
                                        ':<>: 'Text "’")
 
 -- | Zips up @xs@ and @ys@, which must be the same length
-type family ZipImpl (xs' :: [k]) (ys' :: [k]) (xs :: [k]) (ys :: [k]) :: [k] where
-    ZipImpl xs' ys' '[] '[] = '[]
-    ZipImpl xs' ys' (x ': xs) (y ': ys) = (x, y) ': ZipImpl xs' ys' xs ys
-    ZipImpl xs' ys' xs ys = TypeError ('Text "Zip error: ‘"
+type family ZipImpl (accum :: [k]) (xs' :: [k]) (ys' :: [k]) (xs :: [k]) (ys :: [k]) :: [k] where
+    ZipImpl accum xs' ys' '[] '[] = ReverseImpl '[] '[] accum
+    ZipImpl accum xs' ys' (x ': xs) (y ': ys) = ZipImpl ((x, y) ': accum) xs' ys' xs ys
+    ZipImpl accum xs' ys' xs ys = TypeError ('Text "Zip error: ‘"
                               ':<>: 'ShowType xs'
                               ':<>: 'Text "’"
                               ':<>: 'Text " must be the same size as "
                               ':<>: 'Text "‘"
                               ':<>: 'ShowType ys'
                               ':<>: 'Text "’")
+
+type family InitImpl (accum :: [k]) (xs :: [k]) :: [k] where
+    InitImpl accum '[]  = TypeError ('Text "Init error: empty type list")
+    InitImpl accum '[x] = ReverseImpl '[] '[] accum
+    InitImpl accum (x ': xs) = InitImpl (x ': accum) xs
+
+
+type family AppendImpl (accum :: [k]) (xs :: [k]) (ys :: [k]) :: [k] where
+    AppendImpl accum '[] ys = ReverseImpl '[] ys accum
+    AppendImpl accum (x ': xs) ys = AppendImpl (x ': accum) xs ys
+
+type family KindsAtIndicesImpl (accum :: [k]) (ns :: [Nat]) (xs :: [k]) :: [k] where
+    KindsAtIndicesImpl accum '[] xs = ReverseImpl '[] '[] accum
+    KindsAtIndicesImpl accum (n ': ns) xs = KindsAtIndicesImpl (KindAtIndexImpl n xs n xs ': accum) ns xs
+
+type family WithoutImpl (accum ::[k]) (x :: k) (xs :: [k]) :: [k] where
+    WithoutImpl accum x '[] = ReverseImpl '[] '[] accum
+    WithoutImpl accum x (x ': xs) = ReverseImpl '[] xs accum
+    WithoutImpl accum x (y ': xs) = WithoutImpl (y ': accum) x xs

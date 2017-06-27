@@ -62,31 +62,27 @@ type family KindAtPositionIs (n :: Nat) (x :: k) (xs :: [k]) :: Constraint where
     KindAtPositionIs n x xs = (x ~ KindAtIndexImpl (n - 1) xs (n - 1) xs)
 
 -- | Get the types at an list of index
-type family KindsAtIndices (ns :: [Nat]) (xs :: [k]) :: [k] where
-    KindsAtIndices '[] xs = '[]
-    KindsAtIndices (n ': ns) xs = KindAtIndex n xs ': KindsAtIndices ns xs
+type KindsAtIndices (ns :: [Nat]) (xs :: [k]) = KindsAtIndicesImpl '[] ns xs
 
 -- | The typelist @xs@ without first @x@. It is okay for @x@ not to exist in @xs@
-type family Without (x :: k) (xs :: [k]) :: [k] where
-    Without x '[] = '[]
-    Without x (x ': xs) = xs
-    Without x (y ': xs) = y ': Without x xs
+type Without (x :: k) (xs :: [k]) = WithoutImpl '[] x xs
 
 -- | The typelist @xs@ with the first @x@ replaced by @y@. It is okay for @x@ not to exist in @xs@
-type Replace (x :: k) (y :: k) (xs :: [k]) = ReplaceImpl x y xs
+type Replace (x :: k) (y :: k) (xs :: [k]) = ReplaceImpl '[] x y xs
 
 -- | The typelist @zs@ with the first @xs@ replaced by @ys@.
 -- @xs@ must be the same size as @ys@
-type Replaces (xs :: [k]) (ys :: [k]) (zs :: [k]) = ReplacesImpl xs ys xs ys zs
+type Replaces (xs :: [k]) (ys :: [k]) (zs :: [k]) = ReplacesImpl '[] xs ys xs ys zs
 
 -- | The typelist @xs@ without the type at Nat @n@. @n@ must be within bounds of @xs@
 type WithoutIndex (n :: Nat) (xs :: [k]) = WithoutIndexImpl '[] n xs n xs
 
 -- | The typelist @xs@ without the type at Nat @n@ replaced by @y@. @n@ must be within bounds of @xs@
-type ReplaceIndex (n :: Nat) (y :: k) (xs :: [k]) = ReplaceIndexImpl n xs n y xs
+type ReplaceIndex (n :: Nat) (y :: k) (xs :: [k]) = ReplaceIndexImpl '[] n xs n y xs
 
 -- | The typelist @xs@ replaced by @ys@ at the indices @ns@. @ns@ and @ys@ must be the same length. @ns@ must be within bounds of @xs@
-type ReplacesIndex (ns :: [Nat]) (ys :: [k]) (xs :: [k]) = ReplacesIndexImpl 0 ns ys xs
+
+type ReplacesIndex (ns :: [Nat]) (ys :: [k]) (xs :: [k]) = ReplacesIndexImpl '[] 0 ns ys xs
 
 -- | Get the typelist without the 'Head' type
 type family Tail (xs :: [k]) :: [k] where
@@ -113,15 +109,10 @@ type family Complement (xs :: [k]) (ys :: [k]) :: [k] where
     Complement xs (y ': ys)  = Complement (Without y xs) ys
 
 -- | Returns a @xs@ appended with @ys@
-type family Append (xs :: [k]) (ys :: [k]) :: [k] where
-    Append '[] ys = ys
-    Append (x ': xs) ys = x ': Append xs ys
+type Append (xs :: [k]) (ys :: [k]) = AppendImpl '[] xs ys
 
 -- | Returns the typelist without the 'Last' type
-type family Init (xs :: [k]) :: [k] where
-    Init '[]  = TypeError ('Text "Init error: empty type list")
-    Init '[x] = '[]
-    Init (x ': xs) = x ': Init xs
+type Init (xs :: [k]) = InitImpl '[] xs
 
 -- | Takes two lists which must be the same length and returns a list of corresponding pairs.
-type Zip (xs :: [k]) (ys :: [k]) = ZipImpl xs ys xs ys
+type Zip (xs :: [k]) (ys :: [k]) = ZipImpl '[] xs ys xs ys
