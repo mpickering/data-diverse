@@ -117,6 +117,8 @@ spec = do
             fetchN @3 Proxy y `shouldBe` Just 'O'
             fetchN @4 Proxy y `shouldBe` 6
             fetchN @5 Proxy y `shouldBe` Just 'A'
+            -- Compile error: Maybe Char is a duplicate
+            -- fetch @(Maybe Char) y `shouldBe` Just 'O'
 
         it "with duplicate fields can still use 'fetch' for unique fields" $ do
             let x = (5 :: Int) ./ False ./ 'X' ./ Just 'O' ./ (6 :: Int) ./ Just 'A' ./ nul
@@ -329,4 +331,3 @@ spec = do
                 ret = ["5", "False", "'X'", "Just 'O'", "6", "Just 'A'"]
             afoldr (:) [] (collectN x (casesN y)) `shouldBe` ret
             afoldr (:) [] (forManyN (casesN y) x) `shouldBe` ret
-

@@ -12,15 +12,15 @@ import GHC.TypeLits
 -- | Get the first position of a type (indexed by 1)
 -- Will return 0 if @x@ doesn't exists in @xs@.
 type family PositionOfImpl (i :: Nat) (x :: k) (xs :: [k]) :: Nat where
-   PositionOfImpl i x (x ': xs) = i + 1
+   PositionOfImpl i x (x ': xs) = 1 + i
    PositionOfImpl i y (x ': xs) = PositionOfImpl (i + 1) y xs
    PositionOfImpl i x '[] = 0
 
 -- | Get the first index of a type from a list
-type family IndexOfImpl (ctx :: [k]) (x :: k) (xs :: [k]) :: Nat where
-   IndexOfImpl ctx x (x ': xs) = 0
-   IndexOfImpl ctx y (x ': xs) = 1 + IndexOfImpl ctx y xs
-   IndexOfImpl ctx y '[] = TypeError ('Text "IndexOf error: ‘"
+type family IndexOfImpl (ctx :: [k]) (accum :: Nat) (x :: k) (xs :: [k]) :: Nat where
+   IndexOfImpl ctx accum x (x ': xs) = accum
+   IndexOfImpl ctx accum y (x ': xs) = IndexOfImpl ctx (accum + 1) y xs
+   IndexOfImpl ctx accum y '[] = TypeError ('Text "IndexOf error: ‘"
                                       ':<>: 'ShowType y
                                       ':<>: 'Text "’"
                                       ':<>: 'Text " is not a member of "
@@ -41,7 +41,7 @@ type family NubImpl (ctx :: [k]) (y :: k) (ys :: [k]) :: [k] where
 -- | Errors if a type exists in a typelist
 type family MissingImpl (ctx :: [k]) (y :: k) (xs :: [k]) :: Constraint where
     MissingImpl ctx y '[] = ()
-    MissingImpl ctx x (x ': xs) = TypeError ('Text "Missing error: ‘"
+    MissingImpl ctx x (x ': xs) = TypeError ('Text "Unique error: ‘"
                                              ':<>: 'ShowType x
                                              ':<>: 'Text "’"
                                              ':<>: 'Text " is a duplicate in "
@@ -51,9 +51,9 @@ type family MissingImpl (ctx :: [k]) (y :: k) (xs :: [k]) :: Constraint where
     MissingImpl ctx y (x ': xs) = (MissingImpl ctx y xs)
 
 -- | Ensures that the type list contain unique types
-type family IsDistinctImpl (ctx :: [k]) (xs :: [k]) :: Constraint where
-    IsDistinctImpl ctx '[] = ()
-    IsDistinctImpl ctx (x ': xs) = (MissingImpl ctx x xs, IsDistinctImpl ctx xs)
+type family IsDistinctImpl (dummy :: Constraint) (ctx :: [k]) (xs :: [k]) :: Constraint where
+    IsDistinctImpl dummy ctx '[] = ()
+    IsDistinctImpl dummy ctx (x ': xs) = IsDistinctImpl (MissingImpl ctx x xs) ctx xs
 
 -- | Ensures that @x@ only ever appears once in @xs@
 type family UniqueImpl (ctx :: [k]) (x :: k) (xs :: [k]) :: Constraint where
@@ -97,17 +97,24 @@ type family SameLengthImpl (ctx :: [k1]) (cty :: [k2]) (xs :: [k1]) (yx :: [k2])
                                             ':<>: 'ShowType bs
                                             ':<>: 'Text "’")
 
+-- | Reverse list
+type family ReverseImpl (accum :: [k]) (leftover :: [k]) (xs :: [k]) :: [k] where
+    ReverseImpl accum '[] '[] = accum
+    ReverseImpl accum (y ': ys) xs = ReverseImpl accum ys (y ': xs)
+    ReverseImpl accum '[] (x ': xs) = ReverseImpl (x ': accum) '[] xs
+
 -- | The typelist @xs@ without the type at Nat @n@. @n@ must be within bounds of @xs@
-type family WithoutIndexImpl (i :: Nat) (ctx :: [k]) (n :: Nat) (xs :: [k]) :: [k] where
-    WithoutIndexImpl i ctx n '[] = TypeError ('Text "WithoutIndex error: Index ‘"
+type family WithoutIndexImpl (accum :: [k]) (i :: Nat) (ctx :: [k]) (n :: Nat) (xs :: [k]) :: [k] where
+    WithoutIndexImpl accum i ctx 0 '[] = ReverseImpl '[] '[] accum
+    WithoutIndexImpl accum i ctx n '[] = TypeError ('Text "WithoutIndex error: Index ‘"
                                        ':<>: 'ShowType i
                                        ':<>: 'Text "’"
                                        ':<>: 'Text " is out of bounds of "
                                        ':<>: 'Text "‘"
                                        ':<>: 'ShowType ctx
                                        ':<>: 'Text "’")
-    WithoutIndexImpl i ctx 0 (x ': xs) = xs
-    WithoutIndexImpl i ctx n (x ': xs) = x ': WithoutIndexImpl i ctx (n - 1) xs
+    WithoutIndexImpl accum i ctx 0 (x ': xs) = ReverseImpl '[] xs accum -- no @x@
+    WithoutIndexImpl accum i ctx n (x ': xs) = WithoutIndexImpl (x ': accum) i ctx (n - 1) xs
 
 -- | The typelist @xs@ without the type at Nat @n@ replaced by @y@. @n@ must be within bounds of @xs@
 type family ReplaceIndexImpl (i :: Nat) (ctx :: [k]) (n :: Nat) (y :: k) (xs :: [k]) :: [k] where

@@ -32,7 +32,7 @@ type family UniqueIfExists ys x xs :: Constraint where
     UniqueIfExists (y ': ys) x xs = UniqueIfExists ys x xs
 
 -- | Ensures that the type list contain unique types
-type IsDistinct (xs :: [k]) = IsDistinctImpl xs xs
+type IsDistinct (xs :: [k]) = IsDistinctImpl () xs xs
 
 -- | Return the list of distinct types in a typelist
 type family Nub (xs :: [k]) :: [k] where
@@ -44,7 +44,7 @@ type Unique (x :: k) (xs :: [k]) = UniqueImpl xs x xs
 
 -- | Get the first index of a type (Indexed by 0)
 -- Will result in type error if x doesn't exist in xs.
-type IndexOf (x :: k) (xs :: [k]) = IndexOfImpl xs x xs
+type IndexOf (x :: k) (xs :: [k]) = IndexOfImpl xs 0 x xs
 
 -- | Get the first index of a type (Indexed by 1)
 -- Will return 0 if x doesn't exists in xs.
@@ -80,7 +80,7 @@ type Replace (x :: k) (y :: k) (xs :: [k]) = ReplaceImpl x y xs
 type Replaces (xs :: [k]) (ys :: [k]) (zs :: [k]) = ReplacesImpl xs ys xs ys zs
 
 -- | The typelist @xs@ without the type at Nat @n@. @n@ must be within bounds of @xs@
-type WithoutIndex (n :: Nat) (xs :: [k]) = WithoutIndexImpl n xs n xs
+type WithoutIndex (n :: Nat) (xs :: [k]) = WithoutIndexImpl '[] n xs n xs
 
 -- | The typelist @xs@ without the type at Nat @n@ replaced by @y@. @n@ must be within bounds of @xs@
 type ReplaceIndex (n :: Nat) (y :: k) (xs :: [k]) = ReplaceIndexImpl n xs n y xs
