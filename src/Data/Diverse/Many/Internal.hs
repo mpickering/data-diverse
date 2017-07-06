@@ -957,7 +957,7 @@ instance (Eq x, Eq (Many_ xs)) => Eq (Many_ (x ': xs)) where
         False -> False
         _ -> (aft' ls) == (aft' rs)
     -- GHC compilation is SLOW if there is no pragma for recursive typeclass functions for different types
-    {-# NOINLINE (==) #-}
+    -- {-# NOINLINE (==) #-}
 
 -- | Two 'Many's are equal if all their fields equal
 instance Eq (Many_ xs) => Eq (Many xs) where
@@ -998,7 +998,7 @@ instance (Show x, Show (Many_ xs)) => Show (Many_ (x ': xs)) where
         -- use of front here is safe as we are guaranteed the length from the typelist
         v = unsafeCoerce (Partial.head xs) :: x
     -- GHC compilation is SLOW if there is no pragma for recursive typeclass functions for different types
-    {-# NOINLINE showsPrec #-}
+    -- {-# NOINLINE showsPrec #-}
 
 -- | Two 'Many's are equal if all their fields equal
 instance Show (Many_ xs) => Show (Many xs) where
@@ -1022,7 +1022,7 @@ instance (Read x, Read (Many_ xs)) => Read (Many_ (x ': xs)) where
       where
         cons_prec = 5 -- infixr `prefix`
     -- GHC compilation is SLOW if there is no pragma for recursive typeclass functions for different types
-    {-# NOINLINE readPrec #-}
+    -- {-# NOINLINE readPrec #-}
 
 -- | @read "5 ./ False ./ 'X' ./ Just 'O' ./ nil" == (5 :: Int) './' False './' \'X' './' Just \'O' './' 'nil'@
 instance Read (Many_ xs) => Read (Many xs) where
