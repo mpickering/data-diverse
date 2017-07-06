@@ -47,6 +47,8 @@ test-suite data-diverse-test
   other-modules:       Data.Diverse.ManySpec
                        Data.Diverse.TypeSpec
                        Data.Diverse.WhichSpec
+                       Data.Diverse.SlowManySpec
+                       Data.Diverse.SlowTupleSpec
   build-depends:       base
                      , data-diverse
                      , hspec >= 2 && < 3
